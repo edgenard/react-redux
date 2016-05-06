@@ -7,17 +7,19 @@ import isPlainObject from 'lodash/isPlainObject'
 import hoistStatics from 'hoist-non-react-statics'
 import invariant from 'invariant'
 
-const defaultMapStateToProps = state => ({}) // eslint-disable-line no-unused-vars
+const defaultMapStateToProps = state => ({}) // eslint-disable-line no-unused-vars 
 const defaultMapDispatchToProps = dispatch => ({ dispatch })
 const defaultMergeProps = (stateProps, dispatchProps, parentProps) => ({
   ...parentProps,
   ...stateProps,
   ...dispatchProps
 })
+// The three above functions will give fallback values for the connect function
 
 function getDisplayName(WrappedComponent) {
   return WrappedComponent.displayName || WrappedComponent.name || 'Component'
 }
+// This function will get the name of the presentational component passed as the argument to the curried function
 
 let errorObject = { value: null }
 function tryCatch(fn, ctx) {
@@ -29,33 +31,46 @@ function tryCatch(fn, ctx) {
   }
 }
 
+//The above function is a general TryCatch function that takes a function and a value,
+//using apply it calls the function with the value which is an array and catches the error putting the 
+//error message in an errorObject
+
 // Helps track hot reloading.
 let nextVersion = 0
 
+//The actual connect function
 export default function connect(mapStateToProps, mapDispatchToProps, mergeProps, options = {}) {
-  const shouldSubscribe = Boolean(mapStateToProps)
-  const mapState = mapStateToProps || defaultMapStateToProps
+  const shouldSubscribe = Boolean(mapStateToProps)// This takes the mapStateToProps functions and if it is undefined returns false
+  //if this is false that means that this component should not be listening to updates to the state. 
+  const mapState = mapStateToProps || defaultMapStateToProps// If mapStateToProps is undefined the default map state functions
+  // defined earlier is used. 
 
   let mapDispatch
-  if (typeof mapDispatchToProps === 'function') {
-    mapDispatch = mapDispatchToProps
-  } else if (!mapDispatchToProps) {
-    mapDispatch = defaultMapDispatchToProps
-  } else {
-    mapDispatch = wrapActionCreators(mapDispatchToProps)
+  if (typeof mapDispatchToProps === 'function') {//Checks if mapDispatchToProps was passed in as a function
+    mapDispatch = mapDispatchToProps//mapDispatch is now the thing passed in
+  } else if (!mapDispatchToProps) {//checks if it was passed in at all. 
+    mapDispatch = defaultMapDispatchToProps//using the default function defined above
+  } else {//if passed in but not a function then pass it to the function wrapActionCreators which returns something
+    mapDispatch = wrapActionCreators(mapDispatchToProps)//
   }
 
-  const finalMergeProps = mergeProps || defaultMergeProps
-  const { pure = true, withRef = false } = options
-  const checkMergedEquals = pure && finalMergeProps !== defaultMergeProps
+  const finalMergeProps = mergeProps || defaultMergeProps//If mergeProps was passed it comes finalMergeProps else the default is used.
+  const { pure = true, withRef = false } = options//destructures the options object passing in default values if it wasn't given 
+  //or one of the values it  wasn't given.
+  const checkMergedEquals = pure && finalMergeProps !== defaultMergeProps// if the pure option was passed in as true or
+  //The default version verson was given and mergeProps function was passed in checkMergedEquals becomes true
 
   // Helps track hot reloading.
   const version = nextVersion++
 
-  return function wrapWithConnect(WrappedComponent) {
-    const connectDisplayName = `Connect(${getDisplayName(WrappedComponent)})`
+  return function wrapWithConnect(WrappedComponent) {//The returned function that takes in the presentational component
+  //which will get wrapped with a container component
+    const connectDisplayName = `Connect(${getDisplayName(WrappedComponent)})`//Using the getDisplayName function to get
+    // the name of the given component
 
     function checkStateShape(props, methodName) {
+      //This seems to check if the props passed in to the component, I think the wrappedComponent.
+      //If it is not then an error gets gets written saying that the method in the wrappedComponent must return a plain object.
       if (!isPlainObject(props)) {
         warning(
           `${methodName}() in ${connectDisplayName} must return a plain object. ` +
@@ -65,6 +80,10 @@ export default function connect(mapStateToProps, mapDispatchToProps, mergeProps,
     }
 
     function computeMergedProps(stateProps, dispatchProps, parentProps) {
+      //this function takes props for the state, any dispatch actions and any props inherited from context
+      // It calls merged props passing in the arguments and gets an object that holds the merged properties
+      // If it is in production it checks that the mergedProps is a plain object(The checkStateShape function
+      // will warn if it is not). Then it returns the mergedProps
       const mergedProps = finalMergeProps(stateProps, dispatchProps, parentProps)
       if (process.env.NODE_ENV !== 'production') {
         checkStateShape(mergedProps, 'mergeProps')
@@ -73,6 +92,7 @@ export default function connect(mapStateToProps, mapDispatchToProps, mergeProps,
     }
 
     class Connect extends Component {
+      //This is the 
       shouldComponentUpdate() {
         return !pure || this.haveOwnPropsChanged || this.hasStoreStateChanged
       }
